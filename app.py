@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 from pathlib import Path
 
 st.set_page_config(page_title="Proyecto Clima Chile", layout="wide")
@@ -12,6 +12,7 @@ df = pd.read_csv(ruta_csv, sep=";")
 df = df.rename(columns={"Año": "year", "Mes": "month", "Dia": "day"})
 df["Fecha"] = pd.to_datetime(df[["year", "month", "day"]])
 
+# Vista previa de datos
 st.subheader("Vista previa de los datos")
 st.dataframe(df.head())
 
@@ -30,25 +31,24 @@ rango_fechas = st.date_input(
 )
 
 # Filtrar según rango
-df_filtrado = df_estacion[(df_estacion["Fecha"] >= pd.to_datetime(rango_fechas[0])) &
-                          (df_estacion["Fecha"] <= pd.to_datetime(rango_fechas[1]))]
+df_filtrado = df_estacion[
+    (df_estacion["Fecha"] >= pd.to_datetime(rango_fechas[0])) &
+    (df_estacion["Fecha"] <= pd.to_datetime(rango_fechas[1]))
+]
 
-# Gráfico
-fig, ax = plt.subplots(figsize=(12, 6))
-ax.plot(df_filtrado["Fecha"], df_filtrado["TMinima"], label="TMin", marker="o", color="blue")
-ax.plot(df_filtrado["Fecha"], df_filtrado["TMaxima"], label="TMax", marker="o", color="red")
-ax.set_title(f"Temperaturas en {estacion} del {rango_fechas[0]} al {rango_fechas[1]}")
-ax.set_xlabel("Fecha")
-ax.set_ylabel("Temperatura (°C)")
-ax.legend()
-ax.grid(True)
-plt.xticks(rotation=45)
-fig.tight_layout()
-st.pyplot(fig)
+# Gráfico interactivo de temperaturas
+st.subheader("📈 Gráfico de Temperaturas")
+fig = px.line(
+    df_filtrado,
+    x="Fecha",
+    y=["TMinima", "TMaxima"],
+    labels={"value": "Temperatura (°C)", "Fecha": "Fecha"},
+    title=f"Temperaturas en {estacion} del {rango_fechas[0]} al {rango_fechas[1]}"
+)
+st.plotly_chart(fig, use_container_width=True)
 
 # Estadísticas
 st.subheader("📊 Estadísticas de la estación seleccionada")
-
 estadisticas = df_filtrado[["TMinima", "TMaxima"]].describe()
 
 # Traducir columnas y filas
@@ -68,5 +68,30 @@ estadisticas = estadisticas.rename(
         "TMaxima": "Temperatura Máxima"
     }
 )
-
 st.write(estadisticas)
+
+# Descargar CSV filtrado
+st.subheader("💾 Descargar datos filtrados")
+csv = df_filtrado.to_csv(index=False).encode('utf-8')
+st.download_button(
+    "Descargar CSV filtrado",
+    data=csv,
+    file_name="datos_filtrados.csv",
+    mime="text/csv"
+)
+
+# Promedios mensuales
+st.subheader("📊 Promedios mensuales")
+df_filtrado["month"] = df_filtrado["Fecha"].dt.month
+promedios_mes = df_filtrado.groupby("month")[["TMinima", "TMaxima"]].mean().reset_index()
+promedios_mes = promedios_mes.rename(columns={"TMinima": "Temperatura Mínima", "TMaxima": "Temperatura Máxima", "month": "Mes"})
+st.line_chart(promedios_mes.set_index("Mes"))
+
+
+# Días con temperaturas extremas
+st.subheader("🔥 Días con temperaturas extremas (TMax > 35°C)")
+extremos = df_filtrado[df_filtrado["TMaxima"] > 35]
+if not extremos.empty:
+    st.dataframe(extremos[["Fecha", "TMinima", "TMaxima"]])
+else:
+    st.write("No hay días con temperaturas mayores a 35°C en el rango seleccionado.")
