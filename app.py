@@ -89,9 +89,9 @@ st.line_chart(promedios_mes.set_index("Mes"))
 
 
 # Días con temperaturas extremas
-st.subheader("🔥 Días con temperaturas extremas (TMax > 35°C)")
-extremos = df_filtrado[df_filtrado["TMaxima"] > 35]
+st.subheader("🔥 Días con temperaturas extremas (TMax > 30°C)")
+extremos = df_filtrado[df_filtrado["TMaxima"] > 30]
 if not extremos.empty:
     st.dataframe(extremos[["Fecha", "TMinima", "TMaxima"]])
 else:
-    st.write("No hay días con temperaturas mayores a 35°C en el rango seleccionado.")
+    st.write("No hay días con temperaturas mayores a 30°C en el rango seleccionado.")
