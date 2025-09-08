@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 import pandas as pd
 import plotly.express as px
 from pathlib import Path
@@ -6,7 +7,17 @@ from pathlib import Path
 st.set_page_config(page_title="Proyecto Clima Chile", layout="wide")
 st.title("🌡️ Análisis de Temperaturas - Chile")
 
-# Cargar CSV
+url = "https://datos.gob.cl/uploads/recursos/temperaturasDiariasPorEstaciones2012.csv"
+ruta_csv = Path("data/temperaturasDiariasPorEstaciones2012.csv")
+ruta_csv.parent.mkdir(parents=True, exist_ok=True) 
+response = requests.get(url)
+if response.status_code == 200:
+    with open(ruta_csv, "wb") as f:
+        f.write(response.content)
+    print(f"Archivo descargado y guardado en {ruta_csv}")
+else:
+    print(f"No se pudo descargar el archivo. Código de estado: {response.status_code}")
+
 ruta_csv = Path("data/temperaturasDiariasPorEstaciones2012.csv")
 df = pd.read_csv(ruta_csv, sep=";")
 df = df.rename(columns={"Año": "year", "Mes": "month", "Dia": "day"})
